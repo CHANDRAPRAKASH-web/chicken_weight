@@ -1,0 +1,13 @@
+train: ../train/images
+val: ../valid/images
+test: ../test/images
+
+nc: 1
+names: ['chick']
+
+roboflow:
+  workspace: suguna-foods-private-limited-fjgdl
+  project: body-weight-env13
+  version: 5
+  license: CC BY 4.0
+  url: https://universe.roboflow.com/suguna-foods-private-limited-fjgdl/body-weight-env13/dataset/5
