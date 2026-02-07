@@ -1,200 +1,280 @@
-Chicken Weight Estimation Using Computer Vision
-📌 Project Overview
+Chicken Weight Estimation Using Computer Vision & Machine Learning
+1. Project Overview
 
-This project estimates the weight of a chicken (in grams) from an image using Computer Vision and Deep Learning.
+This project aims to predict the weight of a chicken using images by combining object detection, deep feature extraction, and machine learning regression.
+Instead of using physical weighing scales, the system estimates chicken weight automatically from images.
 
-The pipeline combines:
+The project follows a modular pipeline, making it easy to improve or extend in the future.
 
-YOLOv8 for detecting chickens in images
+2. Problem Statement
 
-CNN feature extraction using ResNet
+Manual weighing of chickens:
 
-MLP regression model to predict weight from extracted features
+Is time-consuming
 
-FastAPI server for real-time prediction using images
+Requires physical handling (stress to birds)
 
-🧠 Project Workflow (End-to-End)
-1️⃣ Dataset Preparation
+Is not scalable for large poultry farms
 
-Images of chickens are collected across different days.
+This project proposes an image-based weight prediction system using:
 
-Each image has a ground-truth weight stored in weights.csv.
+YOLO for detecting chickens
 
-YOLO annotations are used to detect chickens.
+CNN for extracting visual features
 
-2️⃣ Chicken Detection (YOLOv8)
+MLP regression for predicting weight in grams
 
-YOLOv8 detects chickens and generates bounding boxes.
+3. Complete Workflow of the Project
+Step 1: Dataset Preparation
 
-Detected chickens are cropped from images.
+Images of chickens were collected across multiple growth days.
 
-Cropped images are stored and linked to the original image.
+Each image has a corresponding actual weight (in grams) stored in weights.csv.
 
-📄 Script:
+The dataset is split into:
+
+train
+
+valid
+
+test
+
+📁 Key files
+
+dataset/
+ ├── train/images
+ ├── valid/images
+ ├── test/images
+ └── data.yaml
+
+Step 2: Chicken Detection (YOLO)
+
+A YOLOv8 model (yolov8n.pt) is used to detect chickens in images.
+
+For each image:
+
+Bounding boxes are generated automatically.
+
+Each detected chicken is cropped.
+
+📄 Script used:
 
 detect_and_crop.py
-
-3️⃣ Feature Extraction
-
-Each cropped chicken image is passed through ResNet18
-
-A 512-dimensional feature vector is extracted per crop
-
-Saved as:
-
-dataset/features/features.npy
-
-
-📄 Script:
-
-extract_features.py
-
-4️⃣ Weight Mapping
-
-Each crop is mapped back to the original image
-
-Weight is taken from weights.csv
-
-Final dataset:
-Features → Weight (grams)
-
-5️⃣ MLP Model Training
-
-A simple MLP regression model is trained
-
-Input: 512 features
-
-Output: weight in grams
-
-📄 Script:
-
-python train_mlp.py \
-  --features dataset/features/features.npy \
-  --meta dataset/crops/crops_meta.csv \
-  --weights weights.csv
 
 
 📁 Output:
 
-models/mlp.pth
+dataset/crops/
+ ├── crop_00001.jpg
+ ├── crop_00002.jpg
+ └── crops_meta.csv
 
-6️⃣ Offline Inference (Correct & Accurate)
 
-This is the reference inference logic (most reliable).
+crops_meta.csv stores:
+
+crop filename
+
+original image name
+
+Step 3: Feature Extraction
+
+Each cropped chicken image is passed through a pretrained CNN (ResNet18).
+
+The final fully-connected layer is removed.
+
+The output feature vector represents the chicken’s visual appearance.
+
+📄 Script used:
+
+extract_features.py
+
+
+📁 Output:
+
+dataset/features/features.npy
+
+Step 4: Weight Mapping
+
+The crop metadata is linked with actual weights using:
+
+weights.csv
+
+
+This mapping ensures:
+
+Each feature vector corresponds to the correct ground-truth weight.
+
+Step 5: Model Training (MLP Regression)
+
+A Multi-Layer Perceptron (MLP) is trained using:
+
+Input: feature vectors
+
+Output: chicken weight (grams)
+
+Feature normalization (mean & std) is applied.
+
+Best model is saved based on validation loss.
+
+📄 Script:
+
+train_mlp.py
+
+
+📁 Output:
+
+models/
+ ├── mlp.pth
+ └── scaler.json
+
+Step 6: Offline Inference & Evaluation
+
+The trained MLP model predicts weight for all crops.
+
+Predictions are saved for analysis.
 
 📄 Script:
 
 inference.py
 
 
-Output:
+📁 Output:
 
-predictions.csv
+models/predictions.csv
 
-7️⃣ API Server (FastAPI)
 
-Accepts an image
+This stage produced accurate predictions and serves as the reference logic for deployment.
 
-Detects chicken using YOLO
+Step 7: Comparison & Error Analysis
+
+Actual vs predicted weights are compared.
+
+Errors (absolute, percentage) can be calculated.
+
+📄 Script:
+
+compare_predictions.py
+
+Step 8: Server Deployment (API)
+
+A FastAPI server exposes a /predict endpoint.
+
+User uploads a chicken image.
+
+The server:
+
+Detects the chicken
+
+Crops the detected region
 
 Extracts features
 
-Predicts weight in grams
+Predicts weight using the trained MLP
 
-📄 Server File:
+Returns weight in grams
+
+📄 Script:
 
 app.py
 
 
-Start server:
-
-uvicorn app:app --host 0.0.0.0 --port 8000
-
-
-API Endpoint:
+📌 Endpoint:
 
 POST http://127.0.0.1:8000/predict
 
-
-Input:
-
-Multipart image (.jpg, .png)
-
-Image should contain one visible chicken
-
-Output:
-
-{
-  "pred_g": 121.3
-}
-
-📂 Project Structure
+4. Folder Structure Explained
 chicken_weight/
-│
-├── dataset/
-│   ├── train/images/
-│   ├── crops/
-│   ├── features/
-│
-├── models/
-│   ├── mlp.pth
-│
-├── weights.csv
-├── train_mlp.py
-├── extract_features.py
-├── detect_and_crop.py
-├── inference.py
-├── app.py
-├── requirements.txt
-└── README.md
+ ├── dataset/
+ │   ├── train/
+ │   ├── valid/
+ │   ├── test/
+ │   ├── crops/
+ │   └── features/
+ ├── models/
+ │   ├── mlp.pth
+ │   └── scaler.json
+ ├── runs/
+ ├── weights.csv
+ ├── detect_and_crop.py
+ ├── extract_features.py
+ ├── train_mlp.py
+ ├── inference.py
+ ├── compare_predictions.py
+ └── app.py
 
-⚠️ Important Notes
-
-Predictions are in grams
-
-Input image should clearly show one chicken
-
-Use inference.py logic as the ground truth reference
-
-API uses the same logic (no averaging / no scaling tricks)
-
-🚀 How a New Person Can Continue This Project
-Step-by-Step Guide
-
-Clone the repository
-
-Install dependencies:
-
+5. Instructions for a New Person to Continue This Project
+Step 1: Environment Setup
+python -m venv venv
+venv\Scripts\activate
 pip install -r requirements.txt
 
+Step 2: Dataset Preparation
 
-Prepare dataset + weights
+Place images inside dataset/train/images
 
-Run detection & crop
+Update weights.csv with correct filenames & weights
 
-Extract features
+Update data.yaml paths if required
 
-Train MLP
+Step 3: Run Detection & Cropping
+python detect_and_crop.py
 
-Test using inference.py
+Step 4: Extract Features
+python extract_features.py
 
-Deploy using FastAPI
+Step 5: Train the MLP Model
+python train_mlp.py \
+ --features dataset/features/features.npy \
+ --meta dataset/crops/crops_meta.csv \
+ --weights weights.csv \
+ --out models
 
-🔮 Future Improvements
+Step 6: Generate Predictions
+python inference.py --predict_all
 
-Multiple chicken detection
+Step 7: Start the Server
+uvicorn app:app --host 0.0.0.0 --port 8000
 
-Average / total weight estimation
+Step 8: Test API
+curl -X POST http://127.0.0.1:8000/predict \
+ -F "file=@image.jpg"
+
+6. Important Notes for Developers
+
+Always follow the same preprocessing as inference.py
+
+Do NOT skip normalization
+
+Input image should:
+
+Contain one chicken clearly visible
+
+Be similar to training images
+
+Weight output is always in grams
+
+7. Future Improvements
+
+Support multiple chickens per image
+
+Add confidence score
+
+Improve YOLO fine-tuning
 
 Mobile app integration
 
-Camera live feed
+Real-time camera support
 
-Dataset augmentation
+Average / min / max weight analytics
 
-Model calibration using scale reference
+Cloud deployment
 
-🧑‍💻 Author
+8. Conclusion
 
-CP
-Computer Vision | Deep Learning | AI Systems
+This project demonstrates a complete real-world ML pipeline:
+
+Detection → Feature extraction → Regression → Deployment
+
+Modular, scalable, and production-ready
+
+Can be extended easily for research or industry use
