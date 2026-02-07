@@ -1,0 +1,29 @@
+# Core
+python>=3.9
+
+# Deep Learning
+torch>=2.0
+torchvision>=0.15
+
+# Object Detection
+ultralytics>=8.0.0
+
+# Image Processing
+opencv-python
+Pillow
+
+# Data Handling
+numpy
+pandas
+scikit-learn
+
+# Model Utilities
+tqdm
+
+# API (Server)
+fastapi
+uvicorn
+python-multipart
+
+# Optional (for visualization/debugging)
+matplotlib
